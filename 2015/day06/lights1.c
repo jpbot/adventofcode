@@ -13,6 +13,11 @@
 #define MAXLINELEN 80
 #define MAXLIGHTS 1000*1000
 
+#define LIGHTBADPARSE 0
+#define LIGHTSETOFF   1
+#define LIGHTSETON    2
+#define LIGHTTOGGLE   3
+
 static int logf(int level, char *fmt, ...);
 static void usage(char *programName);
 
@@ -24,12 +29,14 @@ char light_get(char *lights, int x, int y, int max_x);
 void light_toggle(char *lights, int x, int y, int max_x);
 void light_set_range(char *lights, char set, int x1, int y1, int x2, int y2, int max_x);
 void light_toggle_range(char *lights, int x1, int y1, int x2, int y2, int max_x);
+static int parse_instruction(char *buffer, int *x1, int *y1, int *x2, int *y2);
 
 int main(int argc, char **argv){
    char *inputfile = 0;
    FILE *infile;
    char buffer[MAXLINELEN + 1];
    char lights[MAXLIGHTS];
+   int x1, x2, y1, y2;
 
    memset(lights, 0, MAXLIGHTS * sizeof(char));
 
@@ -53,7 +60,18 @@ int main(int argc, char **argv){
 
    while(fgets(buffer, MAXLINELEN, infile)) {
       if(str1ch(buffer, MAXLINELEN, '\n', 0) > 0){;
-         logf(ERRDEBUG, "READ: %s", buffer);
+//         logf(ERRDEBUG, "READ: %s", buffer);
+         switch(parse_instruction(buffer, &x1, &y1, &x2, &y2)){
+            case LIGHTSETON:
+               light_set_range(lights, 1, x1, y1, x2, y2, 1000);
+               break;
+            case LIGHTSETOFF:
+               light_set_range(lights, 0, x1, y1, x2, y2, 1000);
+               break;
+            case LIGHTTOGGLE:
+               light_toggle_range(lights, x1, y1, x2, y2, 1000);
+         }
+//         logf(ERRDEBUG, "%lu LIGHTS", light_count(lights, MAXLIGHTS));
       }
    }
    fclose(infile);
@@ -83,6 +101,74 @@ int main(int argc, char **argv){
    logf(ERRINFO, "%lu lights remain on following directions from input file: %s", light_count(lights, MAXLIGHTS), inputfile);
 
    return EXIT_SUCCESS;
+}
+
+static int parse_instruction(char *buffer, int *x1, int *y1, int *x2, int *y2){
+   static char *strval;
+   char *temp[4] = {0};
+   static size_t len;
+   int token = 0;
+   int instruction = 0;
+
+   len = strlen(buffer);
+   strval = buffer;
+
+   // trim leading whitespace
+   if(*strval == ' ') while(*++strval == ' ') { len--; }
+
+   if(len < 10) return LIGHTBADPARSE;
+
+   if(strncmp(strval, "turn on", 7) == 0){           // TURN ON
+      len -= 8;
+      strval += 8;
+      instruction = LIGHTSETON;
+//      logf(ERRDEBUG, "PARSE: on");
+   } else if(strncmp(strval, "turn off", 8) == 0){   // TURN OFF
+      len -= 9;
+      strval += 9;
+      instruction = LIGHTSETOFF;
+//      logf(ERRDEBUG, "PARSE: off");
+   } else if(strncmp(strval, "toggle", 6) == 0) {    // TOGGLE
+      len -= 7;
+      strval += 7;
+      instruction = LIGHTTOGGLE;
+//      logf(ERRDEBUG, "PARSE: toggle");
+   }
+
+   // trim leading whitespace
+   if(*strval == ' ') while(*++strval == ' ') { len--; }
+
+   temp[token++] = strval;      // x1
+   while(*++strval != ',' && --len > 0) { }
+   *strval = 0;
+   temp[token++] = ++strval;    // y1
+   while(*++strval != ' ' && --len > 0) { }
+   *strval = 0;
+   if(len < 10) return LIGHTBADPARSE;
+
+   // skip through
+   len -= 9;
+   strval += 9;
+
+   temp[token++] = strval;      // x2
+   while(*++strval != ',' && --len > 0) { }
+   *strval = 0;
+   temp[token++] = ++strval;    // y2
+   if(len < 1) return LIGHTBADPARSE;
+
+   // logf(ERRDEBUG, "PARSE: %s (%s, %s)-(%s, %s)",
+   //      instruction==LIGHTSETON?"on":instruction==LIGHTSETOFF?"off":"toggle",
+   //      temp[0], temp[1], temp[2], temp[3]);
+
+   *x1 = atoi(temp[0]);
+   *y1 = atoi(temp[1]);
+   *x2 = atoi(temp[2]);
+   *y2 = atoi(temp[3]);
+
+   // logf(ERRDEBUG, "PARSE: %s (%d, %d)-(%d, %d)",
+   //      instruction==LIGHTSETON?"on":instruction==LIGHTSETOFF?"off":"toggle",
+   //      *x1, *y1, *x2, *y2);
+   return instruction;
 }
 
 void light_set_range(char *lights, char set, int x1, int y1, int x2, int y2, int max_x){
