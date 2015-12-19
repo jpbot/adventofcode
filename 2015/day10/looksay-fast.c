@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void looksay(const char *d, char *o, size_t dlen);
+void looksay(const char *d, char *o);
 
 int main(int argc, char **argv){
    size_t bufferlen = 6 * 1024 * 1024;
@@ -27,7 +27,7 @@ int main(int argc, char **argv){
 
 
    for(; i < 50; i++){
-      looksay(input_buffer, output_buffer, bufferlen);
+      looksay(input_buffer, output_buffer);
       if(i == 40) loggerf(ERRINFO, "LOOKSAY%02d: [%d]", i+1, strlen(input_buffer));
 
       temp = input_buffer;
@@ -42,7 +42,7 @@ int main(int argc, char **argv){
    return EXIT_SUCCESS;
 }
 
-void looksay(const char *d, char *o, size_t olen){
+void looksay(const char *d, char *o){
    char lastdigit = *d++;
    int digitcount = 1;
 
