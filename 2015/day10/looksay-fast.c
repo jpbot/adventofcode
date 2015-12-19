@@ -28,7 +28,7 @@ int main(int argc, char **argv){
 
    for(; i < 50; i++){
       looksay(input_buffer, output_buffer, bufferlen);
-      if(i == 40) loggerf(ERRINFO, "LOOKSAY%02d: [%d]", i+1, strlen(iinput_buffer));
+      if(i == 40) loggerf(ERRINFO, "LOOKSAY%02d: [%d]", i+1, strlen(input_buffer));
 
       temp = input_buffer;
       input_buffer = output_buffer;
