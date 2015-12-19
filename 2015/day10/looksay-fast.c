@@ -5,7 +5,7 @@
 #include "../common/advent.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 
 void looksay(const char *d, char *o, size_t dlen);
 
