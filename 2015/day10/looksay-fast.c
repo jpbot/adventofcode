@@ -1,6 +1,8 @@
 // DAY 10  -  FAST
 // preallocates enough memory in the buffers
 // minimizes math by working with chars as a unsigned ints instead of ASCII
+// no bounds checking
+// no validation checking
 
 #include "../common/advent.h"
 #include <stdio.h>
