@@ -29,14 +29,14 @@ int main(int argc, char **argv){
 
 
    for(; i < 50; i++){
+      if(i == 40) loggerf(ERRINFO, "LOOKSAY%02d: [%d]", i, strlen(input_buffer));
       looksay(input_buffer, output_buffer);
-      if(i == 40) loggerf(ERRINFO, "LOOKSAY%02d: [%d]", i+1, strlen(input_buffer));
 
       temp = input_buffer;
       input_buffer = output_buffer;
       output_buffer = temp;
    }
-   loggerf(ERRINFO, "LOOKSAY%02d: [%d]", i+1, strlen(input_buffer));
+   loggerf(ERRINFO, "LOOKSAY%02d: [%d]", i, strlen(input_buffer));
 
    free(input_buffer);
    free(output_buffer);
