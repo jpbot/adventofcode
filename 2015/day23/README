@@ -1,0 +1,8 @@
+wow, don't look at this.
+
+Was going to build a VM and ASM, but later decided to make it one prog.
+
+asm.c    is the beginning of the assmbler
+turing.c is the in memory assembler/vm, uses a struct instead of packing an instruction
+
+asm also has a bug in the comments at the top, JMO is JUMP IF ONE, not JUMP IF ODD
