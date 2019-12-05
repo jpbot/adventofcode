@@ -26,7 +26,7 @@
 
 import os
 
-INPUT = "private/advent1a.txt"
+INPUT = "data/advent1a.txt"
 
 def fuelrequiredincr(mass):
 	fuel = (mass / 3 - 2)
