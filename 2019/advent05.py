@@ -204,6 +204,10 @@ def opcomp(data):
 	OP_MULT = 2
 	OP_INP = 3 # single parameter, store input
 	OP_OUTP = 4 # single parameter, retrieve and output
+	OP_JMPT = 5
+	OP_JMPF = 6
+	OP_CMPLT = 7
+	OP_EQ = 8
 	OP_TERM = 99
 	
 	PM_REF = 0
@@ -217,16 +221,16 @@ def opcomp(data):
 	i = 0
 	while(ic < pl):
 		op = buf[ic] % 100
-		debug_out("{:5}: IC: {:5}   OP: {}".format(i, ic, op))
+		mode = (buf[ic] - op) / 100
+		p1m = mode % 10
+		p2m = mode % 100 / 10
+		debug_out("{:5}:   IC: {:5}   MODE: {:3}   OP: {}".format(i, ic, mode, op))
 		i = i + 1
 		
 		if op == OP_ADD:
 			p1 = buf[ic + 1]
 			p2 = buf[ic + 2]
 			p3 = buf[ic + 3]
-			mode = (buf[ic] - op) / 100
-			p1m = mode % 10
-			p2m = mode % 100 / 10
 			
 			if(p1m == PM_IM and p2m == PM_IM):
 				r = p1 + p2
@@ -245,9 +249,6 @@ def opcomp(data):
 			p1 = buf[ic + 1]
 			p2 = buf[ic + 2]
 			p3 = buf[ic + 3]
-			mode = (buf[ic] - op) / 100
-			p1m = mode % 10
-			p2m = mode % 100 / 10
 			
 			if(p1m == PM_IM and p2m == PM_IM):
 				r = p1 * p2
@@ -279,6 +280,103 @@ def opcomp(data):
 
 			print("OUTP: IC: {:5}  MODE: {:5}, OUTP({}): {}".format(ic, p1m, p1, r))
 			ic = ic + 2
+		elif op == OP_JMPT:
+			# - Opcode 5 is jump-if-true: if the first parameter is non-zero, it sets
+			#   the instruction pointer to the value from the second parameter.
+			#   Otherwise, it does nothing.
+			p1 = buf[ic + 1]
+			p2 = buf[ic + 2]
+			
+			if(p1m == PM_IM):
+				p1v = p1
+			else:
+				p1v = buf[p1]
+			if(p2m == PM_IM):
+				p2v = p2
+			else:
+				p2v = buf[p2]
+
+			debug_out("OP_JMPT: IC: {:5}  p1: {:5}  p1m: {:5}  p1v: {}".format(ic, p1, p1m, p1v))
+			debug_out("       :            p2: {:5}  p2m: {:5}  p2v: {}".format(p2, p2m, p2v))
+				
+			if(p1v != 0):
+				ic = p2v
+			else:
+				ic = ic + 3
+			debug_out("       : ICout {}".format(ic))
+		elif op == OP_JMPF:
+			# - Opcode 6 is jump-if-false: if the first parameter is zero, it sets the
+			#   instruction pointer to the value from the second parameter.
+			#   Otherwise, it does nothing.
+			p1 = buf[ic + 1]
+			p2 = buf[ic + 2]
+			
+			if(p1m == PM_IM):
+				p1v = p1
+			else:
+				p1v = buf[p1]
+			if(p2m == PM_IM):
+				p2v = p2
+			else:
+				p2v = buf[p2]
+
+			debug_out("OP_JMPF: IC: {:5}  p1: {:5}  p1m: {:5}  p1v: {}".format(ic, p1, p1m, p1v))
+			debug_out("       :            p2: {:5}  p2m: {:5}  p2v: {}".format(p2, p2m, p2v))
+				
+			if(p1v == 0):
+				ic = p2v
+			else:
+				ic = ic + 3
+			debug_out("       : ICout {}".format(ic))
+		elif op == OP_CMPLT:
+			# - Opcode 7 is less than: if the first parameter is less than the second
+			#   parameter, it stores 1 in the position given by the third parameter.
+			#   Otherwise, it stores 0.
+			p1 = buf[ic + 1]
+			p2 = buf[ic + 2]
+			p3 = buf[ic + 3]
+			
+			if(p1m == PM_IM):
+				p1v = p1
+			else:
+				p1v = buf[p1]
+			if(p2m == PM_IM):
+				p2v = p2
+			else:
+				p2v = buf[p2]
+				
+			if(p1v < p2v):
+				r = 1
+			else:
+				r = 0
+				
+			buf[p3] = r
+			ic = ic + 4
+		elif op == OP_EQ:
+			# - Opcode 8 is equals: if the first parameter is equal to the second
+			#   parameter, it stores 1 in the position given by the third parameter.
+			#   Otherwise, it stores 0.
+			p1 = buf[ic + 1]
+			p2 = buf[ic + 2]
+			p3 = buf[ic + 3]
+			
+			if(p1m == PM_IM):
+				p1v = p1
+			else:
+				p1v = buf[p1]
+			if(p2m == PM_IM):
+				p2v = p2
+			else:
+				p2v = buf[p2]
+				
+			if(p1v==p2v):
+				r = 1
+			else:
+				r = 0
+				
+			buf[p3] = r
+			debug_out("OP_EQ {}:{} = {}".format(p1v,p2v,r))
+			ic = ic + 4
 		elif op == OP_TERM:
  			debug_out("OPCOMP BUFFER: {}".format(buf))
 			return buf[0], 0
@@ -289,6 +387,9 @@ def opcomp(data):
 
 	return 0, -1	
 
+
+DEBUG = False
+
 intcode = []
 read_data(intcode)
 debug_out("intcode length: {}".format(len(intcode)))
@@ -296,9 +397,88 @@ debug_out("intcode length: {}".format(len(intcode)))
 r,err = opcomp(intcode)
 if(err):
 	exit_err("PART A error.", 1)
-print("PARTA: {}".format(r))
-## LAST OUTP: 9961446
+print("OUTPUT: {}".format(r))
+# LAST OUTP (part1): 9961446
 
+# LAST OUTP (part2): 685277 too low
+# LAST OUTP (part2): 742621
+exit(0)
+
+
+## PART A TESTS
+# DEBUG = True
 # testdata = [1002,4,3,4,33]
 # print(testdata)
 # print(opcomp(testdata))
+
+
+## PART B TESTS
+DEBUG = True
+
+# Using position mode, consider whether the input is equal to 8; 
+# output 1 (if it is) or 0 (if it is not).
+# print("TEST part2 1: position mode eq 8")
+# testdata = [3,9,8,9,10,9,4,9,99,-1,8]
+# print(testdata)
+# print(opcomp(testdata))
+# print
+
+# Using position mode, consider whether the input is less than 8;
+# output 1 (if it is) or 0 (if it is not).
+# print("TEST part2 2: position mode lt 8")
+# testdata = [3,9,7,9,10,9,4,9,99,-1,8]
+# print(testdata)
+# print(opcomp(testdata))
+# print
+
+# Using immediate mode, consider whether the input is equal to 8;
+# output 1 (if it is) or 0 (if it is not).
+# print("TEST part2 3: immediate mode eq 8")
+# testdata = [3,3,1108,-1,8,3,4,3,99]
+# print(testdata)
+# print(opcomp(testdata))
+# print
+
+# Using immediate mode, consider whether the input is less than 8;
+# output 1 (if it is) or 0 (if it is not).
+# print("TEST part2 4: immediate mode lt 8")
+# testdata = [3,3,1107,-1,8,3,4,3,99]
+# print(testdata)
+# print(opcomp(testdata))
+# print
+
+
+# Here are some jump tests that take an input, then output 0 if the input
+# was zero or 1 if the input was non-zero:
+# 
+# (using position mode)
+# print("TEST part2 5: positional jump OUT = 0 IN: 0; OUT = 1, IN: !0")
+# testdata = [3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9]
+# print(testdata)
+# print(opcomp(testdata))
+# print
+# 
+# # (using immediate mode)
+# print("TEST part2 6: immediate mode jump")
+# testdata = [3,3,1105,-1,9,1101,0,0,12,4,12,99,1]
+# print(testdata)
+# print(opcomp(testdata))
+# print
+#
+# Here's a larger example:
+# 
+# 3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+# 1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
+# 999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99
+#
+# The above example program uses an input instruction to ask for a single
+# number. The program will then output 999 if the input value is below 8,
+# output 1000 if the input value is equal to 8, or output 1001 if the
+# input value is greater than 8.
+# print("TEST part2 6:")
+# testdata = [3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+# 			1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
+# 			999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99]
+# print(testdata)
+# print(opcomp(testdata))
+# print
