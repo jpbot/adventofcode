@@ -133,7 +133,7 @@
 
 import os
 
-INPUT = "data/advent2.txt"
+INPUT = "data/advent02.txt"
 testdata = [1,9,10,3,2,3,11,0,99,30,40,50]
 
 def exit_err(str, err):
