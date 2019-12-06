@@ -74,8 +74,10 @@ DOWN = 'D'
 UP = 'U'
 LEFT = 'L'
 RIGHT = 'R'
-LR = 0
-UD = 1
+DIR_LR = 0
+DIR_UD = 1
+DIR_RL = 2
+DIR_DL = 3
 
 INPUT = 'data/advent03_t3.txt'
 wires = []
@@ -100,10 +102,10 @@ def get_intersection(a, b):
 	# maybe: http://www.cs.swan.ac.uk/~cssimon/line_intersection.html
 	# maybe do something simple because we have all perpendicular segments
 
-	if(a[4] == 1 and b[4] == 0):
+	if(a[4] % 1 == 1 and b[4] % 1 == 0):
 		if(a[0] > b[0] and a[2] < b[2] and a[1] < b[1] and a[3] > b[3]):
 			return (a[0],b[1])
-	if(a[4] == 0 and b[4] == 1):
+	if(a[4] % 1 == 0 and b[4] % 1 == 1):
 		if(a[0] < b[0] and a[2] > b[2] and a[1] > b[1] and a[3] < b[3]):
 			return (b[0],a[1])
 
@@ -113,6 +115,8 @@ def is_segment_point(segment, point):
 	x = point[0]
 	y = point[1]
 	if(segment[0] == segment[2] == x and segment[1] < y < segment[3]):
+		if(segment[4] = DIR_DL):
+			return abs(segment[1] - y)
 		return segment[3] - y	
 	if(segment[1] == segment[3] == y and segment[0] < x < segment[2]):
 		return segment[2] - x	
