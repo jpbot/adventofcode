@@ -60,6 +60,7 @@
 
 import os
 import csv
+import math
 
 #          1
 #          |
@@ -76,12 +77,15 @@ RIGHT = 'R'
 LR = 0
 UD = 1
 
-INPUT = 'data/advent03_t1.txt'
+INPUT = 'data/advent03_t3.txt'
 wires = []
 
-def check_intersection(a,b):
+def get_intersection(a, b):
 	# check if line segments a and b intersect
 	# assume only horizontal and vertical segments (0,90,180,270 degrees)
+	#
+	# returns point of intersection, or none if segments do not intersect
+	#
 	# ...........
 	# .+-----+...
 	# .|.....|...             b               a
@@ -92,10 +96,89 @@ def check_intersection(a,b):
 	# .|.......|.                    * direction
 	# .o-------+.
 	# ...........
-	if(a(4) = b(4)):
-		return False)
-	return True
+	#
+	# maybe: http://www.cs.swan.ac.uk/~cssimon/line_intersection.html
+	# maybe do something simple because we have all perpendicular segments
 
+	if(a[4] == 1 and b[4] == 0):
+		if(a[0] > b[0] and a[2] < b[2] and a[1] < b[1] and a[3] > b[3]):
+			return (a[0],b[1])
+	if(a[4] == 0 and b[4] == 1):
+		if(a[0] < b[0] and a[2] > b[2] and a[1] > b[1] and a[3] < b[3]):
+			return (b[0],a[1])
+
+def is_segment_point(segment, point):
+	# similar to get_intersection, lazy implementation only works
+	# with single axis segments	
+	x = point[0]
+	y = point[1]
+	if(segment[0] == segment[2] == x and segment[1] < y < segment[3]):
+		return segment[3] - y	
+	if(segment[1] == segment[3] == y and segment[0] < x < segment[2]):
+		return segment[2] - x	
+	return False
+	
+	
+def segment_length(segment):
+	# return math.sqrt((segment[3]-segment[1]) ** 2 + (segment[2]-segment[0]) ** 2)
+	# do less work since segments always follow a single axis
+	return (segment[3]-segment[1]) + (segment[2]-segment[0])
+
+	
+def manhattan(point):
+	return abs(point[0]) + abs(point[1])
+	
+
+def path_distance(wire, point):
+	d = 0
+	for segment in wire:
+		a = is_segment_point(segment, point)
+		if(a):
+			# d = d + segment_distance_point(segment, point)
+			return d + a
+		else:
+			d = d + segment_length(segment)
+		print("{}: {} :: {}".format(d,segment, point))
+	
+
+def part_a():
+	d = 0
+	i = (0, 0)
+	for a in wires[0]:
+		for b in wires[1]:
+			intersect = get_intersection(a,b)
+			if(intersect):
+				if(d == 0 or d > manhattan(intersect)):
+					d = manhattan(intersect)
+					i = intersect
+
+	if(d):
+		print("Closest intersection of wires to origin is {}".format(i))
+		print("Manhattan Distance: {}".format(d))			
+
+
+def part_b():
+	d = 0
+	i = (0, 0)
+	for a in wires[0]:
+		for b in wires[1]:
+			intersect = get_intersection(a,b)
+			if(intersect):
+				apath = path_distance(wires[0],intersect)
+				bpath = path_distance(wires[1],intersect)
+				print("intersection: {}".format(intersect))
+				print("      wire a: {}".format(apath))
+				print("      wire b: {}".format(bpath))
+				print("        path: {}".format(apath + bpath))
+				print
+				if(d == 0 or d > manhattan(intersect)):
+					d = manhattan(intersect)
+					i = intersect
+
+	if(d):
+		print("Closest intersection of wires to origin is {}".format(i))
+		print("Manhattan Distance: {}".format(d))		
+		
 
 # build a list of wires, each wire a list of segments of the path
 with open(INPUT, 'r') as input:
@@ -135,15 +218,6 @@ with open(INPUT, 'r') as input:
 			# min and max only works because points of segments share a common axis
 			wire.append((min(x1,x2),min(y1,y2),max(x1,x2),max(y1,y2),dir))
 
-# debug
-print wires
-
 # search for intersections
-# maybe: http://www.cs.swan.ac.uk/~cssimon/line_intersection.html
-# maybe do something simple because we have all perpendicular segments
-i = 0
-for a in wires[0]:
-	for b in wires[1]:
-		if(check_intersection(a,b)):
-			print i,a,b,":",a[0], a[1], a[2], a[3], a[4]
-			
+# part_a()	# intersection closest to origin point
+part_b()	# intersection shortest path
