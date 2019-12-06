@@ -75,11 +75,11 @@ UP = 'U'
 LEFT = 'L'
 RIGHT = 'R'
 DIR_LR = 0
-DIR_UD = 1
+DIR_UP = 1
 DIR_RL = 2
-DIR_DL = 3
+DIR_DN = 3
 
-INPUT = 'data/advent03_t3.txt'
+INPUT = 'data/advent03.txt'
 wires = []
 
 def get_intersection(a, b):
@@ -102,10 +102,10 @@ def get_intersection(a, b):
 	# maybe: http://www.cs.swan.ac.uk/~cssimon/line_intersection.html
 	# maybe do something simple because we have all perpendicular segments
 
-	if(a[4] % 1 == 1 and b[4] % 1 == 0):
+	if(a[4] % 2 == 1 and b[4] % 2 == 0):
 		if(a[0] > b[0] and a[2] < b[2] and a[1] < b[1] and a[3] > b[3]):
 			return (a[0],b[1])
-	if(a[4] % 1 == 0 and b[4] % 1 == 1):
+	if(a[4] % 2 == 0 and b[4] % 2 == 1):
 		if(a[0] < b[0] and a[2] > b[2] and a[1] > b[1] and a[3] < b[3]):
 			return (b[0],a[1])
 
@@ -115,10 +115,12 @@ def is_segment_point(segment, point):
 	x = point[0]
 	y = point[1]
 	if(segment[0] == segment[2] == x and segment[1] < y < segment[3]):
-		if(segment[4] = DIR_DL):
+		if(segment[4] == DIR_UP):
 			return abs(segment[1] - y)
 		return segment[3] - y	
 	if(segment[1] == segment[3] == y and segment[0] < x < segment[2]):
+		if(segment[4] == DIR_LR):
+			return abs(segment[0] - x)
 		return segment[2] - x	
 	return False
 	
@@ -138,11 +140,9 @@ def path_distance(wire, point):
 	for segment in wire:
 		a = is_segment_point(segment, point)
 		if(a):
-			# d = d + segment_distance_point(segment, point)
 			return d + a
 		else:
 			d = d + segment_length(segment)
-		print("{}: {} :: {}".format(d,segment, point))
 	
 
 def part_a():
@@ -157,12 +157,12 @@ def part_a():
 					i = intersect
 
 	if(d):
-		print("Closest intersection of wires to origin is {}".format(i))
-		print("Manhattan Distance: {}".format(d))			
+		print("PART A: Closest intersection of wires to origin: {}".format(i))
+		print("PART A:                      Manhattan Distance: {}".format(d))			
 
 
 def part_b():
-	d = 0
+	p = 0
 	i = (0, 0)
 	for a in wires[0]:
 		for b in wires[1]:
@@ -170,19 +170,20 @@ def part_b():
 			if(intersect):
 				apath = path_distance(wires[0],intersect)
 				bpath = path_distance(wires[1],intersect)
-				print("intersection: {}".format(intersect))
-				print("      wire a: {}".format(apath))
-				print("      wire b: {}".format(bpath))
-				print("        path: {}".format(apath + bpath))
-				print
-				if(d == 0 or d > manhattan(intersect)):
-					d = manhattan(intersect)
+				path = apath + bpath
+# 				print("intersection: {}".format(intersect))
+# 				print("      wire a: {}".format(apath))
+# 				print("      wire b: {}".format(bpath))
+# 				print("        path: {}".format(path))
+# 				print
+				if(p == 0 or p > path):
+					p = path
 					i = intersect
 
-	if(d):
-		print("Closest intersection of wires to origin is {}".format(i))
-		print("Manhattan Distance: {}".format(d))		
-		
+	if(p):
+		print("PART B: Intersection of shortest path to origin is at: {}".format(i))
+		print("PART B:                            Manhattan Distance: {}".format(manhattan(i)))		
+		print("PART B:                                   Path Length: {}".format(p))
 
 # build a list of wires, each wire a list of segments of the path
 with open(INPUT, 'r') as input:
@@ -200,22 +201,22 @@ with open(INPUT, 'r') as input:
 				x1 = x2
 				y1 = y2
 				y2 = y1 - int(move[1:])
-				dir = UD
+				dir = DIR_DN
 			elif(d == UP):			
 				x1 = x2
 				y1 = y2
 				y2 = y1 + int(move[1:])
-				dir = UD
+				dir = DIR_UP
 			elif(d == LEFT):
 				y1 = y2
 				x1 = x2
 				x2 = x1 - int(move[1:])
-				dir = LR
+				dir = DIR_RL
 			elif(d == RIGHT):
 				y1 = y2
 				x1 = x2
 				x2 = x1 + int(move[1:])
-				dir = LR
+				dir = DIR_LR
 			else:
 				print("Bad move in file: {}".format(INPUT))
 				break
@@ -223,5 +224,6 @@ with open(INPUT, 'r') as input:
 			wire.append((min(x1,x2),min(y1,y2),max(x1,x2),max(y1,y2),dir))
 
 # search for intersections
-# part_a()	# intersection closest to origin point
+part_a()	# intersection closest to origin point
+print
 part_b()	# intersection shortest path
