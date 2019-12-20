@@ -58,8 +58,8 @@ with open(INPUT, 'r') as input:
 		
 # PART 1 - SUM of all orbits
 a = 0
-for (obj, orbits) in orbitmap.items():
-	a = a + get_orbits(orbitmap, obj)
+for o in orbitmap.keys():
+	a = a + get_orbits(orbitmap, o)
 
 print("Total orbits in map from file {}: {}".format(INPUT, a))
 
