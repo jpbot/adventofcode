@@ -7,7 +7,7 @@
 ChronoMessage cm;
 
 void problemOne(std::vector<int> &listA, std::vector<int> &listB){
-    std::cout << cm.beginLog() << "AoC 2024 - Day 01: PROBLEM 2" << std::endl;
+    std::cout << cm.beginLog() << "AoC 2024 - Day 01: PROBLEM 1" << std::endl;
 
     std::cout << cm.beginLog() << "Computing distance (displaying first 5 calculations)" << std::endl;
     int d = 0;
@@ -22,7 +22,7 @@ void problemOne(std::vector<int> &listA, std::vector<int> &listB){
 }
 
 void problemTwo(std::vector<int> &listA, std::vector<int> &listB){
-    std::cout << cm.beginLog() << "AoC 2024 - Day 01: PROBLEM 1" << std::endl;
+    std::cout << cm.beginLog() << "AoC 2024 - Day 01: PROBLEM 2" << std::endl;
 
     std::cout << cm.beginLog() << "Computing similarity score (displaying first 5 calculations)" << std::endl;
     int s = 0;
