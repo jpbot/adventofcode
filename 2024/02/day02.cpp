@@ -10,69 +10,65 @@
 
 ChronoMessage cm;
 
+// Test individual AoC 2024 Day2 report
+// input:   single report vector
+// returns: 0 no problems found
+//          -1 only 0 or 1 levels
+//          >1 level where problem occurs 
+int testReport(std::vector<int> &r, int skipLevel = -1){
+    long reportLen = r.size();
+    int level, direction;
+    int p = 1;
+    int lastLevel = r[0];
+
+    // must have > 1 levels to check. 
+    if(reportLen < 2) return -1;        //untested
+    
+    if(skipLevel == 0){
+        p++;
+        lastLevel = r[1];
+    }
+          
+    for(; p < reportLen; p++){
+        if(p != skipLevel && !(p == 1 && skipLevel == 0)){
+            level = r[p];
+
+            //check consistent direction (and !zero change)
+            if(level == lastLevel){       //values must not repeat
+                return p;
+            }
+        
+            if((p == 1 && skipLevel != 1) || (skipLevel == 0 && p == 2) || (skipLevel == 1 && p == 2)){
+                //determine direction (1 increasing, -1 decreasing)
+                direction = level>lastLevel?1:-1;
+            } else if(direction != (level>lastLevel?1:-1)) {
+                //if direction changed, not a safe report
+                return p;
+            }
+
+            //check magnitute of change is not more than 3
+            if(abs(level-lastLevel) > 3){
+                return p;
+            }
+        
+            lastLevel = level;
+        }
+    }
+
+    return 0;
+}
+
 void problemOne(std::vector<std::vector<int> > &report){
     std::cout << cm.beginLog() << "AoC 2024 - Day 02: PROBLEM 1" << std::endl;
 
     std::cout << cm.beginLog() << "Checking for 'safe' reports" << std::endl;
     int safeReports = 0;
-    int last, direction;
-    bool safeReport = false;
+    
     for(int i = 0; i < report.size(); i++){
-        if(report[i].size() > 1){
-            safeReport = true;
-        
-            for(int p = 0; p < report[i].size(); p++){
-                if(p > 0){
-                    //check consistent direction (and !zero change)
-                    if(report[i][p] == last){       //values must not repeat
-                        safeReport = false;
-        #ifdef DEBUG
-        std::cout << cm.beginLog() << "problemOne: " << "check for repeated value fails (" << 
-            i <<", " << p << ")." << std::endl;
-        #endif
-                        break;
-                    }
-                    if(p==1){
-                        //determine direction (1 increasing, -1 decreasing)
-                        direction = report[i][p]>last?1:-1;
-                    } else if(direction != (report[i][p]>last?1:-1)) {
-                        //if direction changed, not a safe report
-                        safeReport = false;
-        #ifdef DEBUG
-        std::cout << cm.beginLog() << "problemOne: " << "check for direction change fails (" << 
-            i <<", " << p << "). DIR=" << direction << " thisDIR=" << (report[i][p]>last?1:-1) << std::endl;
-        #endif
-                        break;
-                    }
-                    //check magnitute of change is not more than 3
-                    if(abs(report[i][p]-last) > 3){
-                        safeReport = false;
-        #ifdef DEBUG
-        std::cout << cm.beginLog() << "problemOne: " << "check for change magnitute > 3 (" << 
-            i <<", " << p << "). comp (" << report[i][p] << ", " << last << 
-            "), Change magnitute: " << abs(report[i][p]-last) << std::endl;
-         #endif
-                        break;
-                    }
-                }
-                last = report[i][p];
-            }
-            if(safeReport) safeReports++;
-        }
-
-        #ifdef DEBUG
-        // print a sample
-        if(i < 10){
-            std::cout << "  " << i << ": " << report[i][0];
-            for(int p = 1; p < report[i].size(); p++){
-                std::cout << ", " << report[i][p];
-            } 
-            std::cout << std::endl << "     |" << safeReport <<
-                " reports: " << safeReports << std::endl;
-        }
-        #endif
+        if(testReport(report[i]) == 0)
+            safeReports++;
     }
-    std::cout << cm.beginLog() << "PROBLEM 1 SAFE REPORT COUNT:" << safeReports << std::endl;
+    std::cout << cm.beginLog() << "PROBLEM 1 SAFE REPORT COUNT: " << safeReports << std::endl;
 }
 
 void problemTwo(std::vector<std::vector<int> > &report){
@@ -80,77 +76,26 @@ void problemTwo(std::vector<std::vector<int> > &report){
 
     std::cout << cm.beginLog() << "Checking for 'safe' reports" << std::endl;
     int safeReports = 0;
-    int last, direction;
-    bool safeReport = false;
-    bool problemBuffer = false;
+    
     for(int i = 0; i < report.size(); i++){
-        if(report[i].size() > 1){
-            safeReport = true;
-            problemBuffer = false;
+        int s = testReport(report[i]);
+        if(s == 0){
+            //safe without exceptions
+            safeReports++;
+        }
         
-            for(int p = 0; p < report[i].size(); p++){
-                if(p > 0){
-                    //check consistent direction (and !zero change)
-                    if(report[i][p] == last){       //values must not repeat
-                        if(problemBuffer){
-                            safeReport = false;
-        #ifdef DEBUG
-        std::cout << cm.beginLog() << "problemOne: " << "check for repeated value fails (" << 
-            i <<", " << p << ")." << std::endl;
-        #endif
-                            break;
-                        }
-                        problemBuffer = true;
-                    }
-                    if(p==1){
-                        //determine direction (1 increasing, -1 decreasing)
-                        direction = report[i][p]>last?1:-1;
-                    } else if(direction != (report[i][p]>last?1:-1)) {
-                        //if direction changed, not a safe report
-                        if(problemBuffer){
-                            safeReport = false;
-        #ifdef DEBUG
-        std::cout << cm.beginLog() << "problemOne: " << "check for direction change fails (" << 
-            i <<", " << p << "). DIR=" << direction << " thisDIR=" << (report[i][p]>last?1:-1) << std::endl;
-        #endif
-                            break;
-                        }
-                        problemBuffer = true;
-                    }
-                    //check magnitute of change is not more than 3
-                    if(abs(report[i][p]-last) > 3){
-                        if(problemBuffer){
-                            safeReport = false;
-        #ifdef DEBUG
-        std::cout << cm.beginLog() << "problemOne: " << "check for change magnitute > 3 (" << 
-            i <<", " << p << "). comp (" << report[i][p] << ", " << last << 
-            "), Change magnitute: " << abs(report[i][p]-last) << std::endl;
-         #endif
-                          break;
-                        }
-                        problemBuffer = true;
-                    }
-                }
-                if(!problemBuffer) last = report[i][p];
+        if(s > 0){
+            for(int s = 0; s < report[i].size(); s++){    //unsafe at level 2 (0, >1<) or higher
+                if(testReport(report[i], s) == 0){
+                    safeReports++;
+                    break;
+                };
             }
-            if(safeReport) safeReports++;
         }
-
-        #ifdef DEBUG
-        // print a sample
-        if(i < 10){
-            std::cout << "  " << i << ": " << report[i][0];
-            for(int p = 1; p < report[i].size(); p++){
-                std::cout << ", " << report[i][p];
-            } 
-            std::cout << std::endl << "     |" << safeReport <<
-                " reports: " << safeReports << std::endl;
-        }
-        #endif
+   
     }
-    std::cout << cm.beginLog() << "PROBLEM 2 SAFE REPORT COUNT:" << safeReports << std::endl;
+    std::cout << cm.beginLog() << "PROBLEM 2 SAFE REPORT COUNT: " << safeReports << std::endl;
 }
-
 
 
 bool check(std::size_t pos){
@@ -193,16 +138,6 @@ int main(int argc, char** argv){
     while (std::getline(infile, s)){
         std::vector<int> t = tokenize(s);
         c++;
-//        if(c < 5){
-//            std::cout << "  " << c << ">" << s << std::endl;
-//            std::cout << "    ->";
-//                for(int i=0; i< t.size(); i++)
-//                    if(i > 0)
-//                        std::cout << ", " << t[i];
-//                    else
-//                        std::cout << t[i];
-//                std::cout << "\n";
-//        }
         report.push_back(t);
     }
     std::cout << cm.beginLog() << "Read " << c << " lines from file" << std::endl;
