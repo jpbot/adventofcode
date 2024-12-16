@@ -26,12 +26,13 @@ class Coord{
 class Antennas{
     private:
         bool calculated;
+        bool type2;
         char frequency;
         int xsize;
         int ysize;
         unsigned long validAntinodes;
         std::deque<Coord> coords;
-        std::deque<Coord> antiNodes;
+        std::set<Coord> antiNodes;
 
         unsigned long calcAntinode(bool addHead = false, bool verbose = false){
             int x, y;
@@ -55,38 +56,63 @@ class Antennas{
                     }
 
                     //slope
-                    xSlope = coords[a].x - coords[b].x;
-                    ySlope = coords[a].y - coords[b].y;
+                    xSlope = coords[b].x - coords[a].x;
+                    ySlope = coords[b].y - coords[a].y;
 
-                    //figure out antinode 1
-                    x = coords[a].x + xSlope;
-                    y = coords[a].y + ySlope;
-                    if(x < xsize && y < ysize && x >= 0 && y >= 0){
-                        Coord a1 (x, y);
-                        antiNodes.push_back(a1);
-                        validAntinodes++;
-                        if(verbose)
-                            std::cout << "   antinode(1): (" << x << ", " << y << ")";
-                    }
-                    else if(verbose)
-                        std::cout << "   antinode(-): (" << x << ", " << y << ")";
+                    if(!type2){
+                        //figure out antinode 1
+                        x = coords[a].x - xSlope;
+                        y = coords[a].y - ySlope;
+                        if(x < xsize && y < ysize && x >= 0 && y >= 0){
+                            Coord a1 (x, y);
+                            antiNodes.insert(a1);
+                            validAntinodes++;
+                            if(verbose)
+                                std::cout << "   antinode(1): (" << x << ", " << y << ")";
+                        }
+                        else if(verbose)
+                            std::cout << "   antinode(-): (" << x << ", " << y << ")";
                 
+                        //figure out antinode 2
+                        x = coords[b].x + xSlope;
+                        y = coords[b].y + ySlope;
+                        if(x < xsize && y < ysize && x >= 0 && y >= 0){
+                            Coord a2 (x, y);
+                            antiNodes.insert(a2);
+                            validAntinodes++;
+                            if(verbose)
+                                std::cout << "   antinode(2): (" << x << ", " << y << ")";
+                        }
+                        else if(verbose)
+                            std::cout << "   antinode(-): (" << x << ", " << y << ")";
 
-                    //figure out antinode 2
-                    x = coords[b].x - xSlope;
-                    y = coords[b].y - ySlope;
-                    if(x < xsize && y < ysize && x >= 0 && y >= 0){
-                        Coord a2 (x, y);
-                        antiNodes.push_back(a2);
-                        validAntinodes++;
                         if(verbose)
-                            std::cout << "   antinode(2): (" << x << ", " << y << ")";
-                    }
-                    else if(verbose)
-                        std::cout << "   antinode(-): (" << x << ", " << y << ")";
+                            std::cout << std::endl;
+                    } else {
+                        //type2 calculation
+                        //find top
+                        x = coords[a].x;
+                        y = coords[a].y;
+                        while(0 <= (x - xSlope) && (x - xSlope) < xsize && 0 <= (y - ySlope) && (y - ySlope) < ysize){
+                            x -= xSlope;
+                            y -= ySlope;
+                        }
 
-                    if(verbose)
-                        std::cout << std::endl;
+                        // add first antiNode
+                        Coord a1 (x, y);
+                        antiNodes.insert(a1);
+                        validAntinodes++;
+
+                        // add remaining antiNodes
+                        while(0 <= (x + xSlope) && (x + xSlope) < xsize && 0 <= (y + ySlope) && (y + ySlope) < ysize){
+                            x += xSlope;
+                            y += ySlope;
+                        
+                            Coord a1 (x, y);
+                            antiNodes.insert(a1);
+                            validAntinodes++;
+                        }
+                    }
                 }
             }
 
@@ -108,6 +134,7 @@ class Antennas{
         Antennas(){
             validAntinodes = 0;
             calculated = false;
+            type2 = false;
             frequency = 0;
             xsize = 0;
             ysize = 0;
@@ -149,11 +176,29 @@ class Antennas{
             calcAntinode(false, true);
         }
         
-        std::deque<Coord> & getAntinodes()  {
+        std::set<Coord> & getAntinodes()  {
             if(!calculated)
                 calcAntinode();
 
             return antiNodes;
+        }
+
+        void noSetType2(bool recalc){
+            if(type2 != false){
+                calculated = false;
+                type2 = false;
+            }
+            if(recalc)
+                calcAntinode();
+        }
+
+        void setType2(bool recalc){
+            if(type2 != true){
+                calculated = false;
+                type2 = true;
+            }
+            if(recalc)
+                calcAntinode();
         }
             
 };
@@ -169,22 +214,28 @@ void printAntennaCounts(std::map<char, Antennas> frequencies){
     }
 }
 
-unsigned long deDupeAntinodes(std::map<char, Antennas> f, std::set<Coord> & antinodes, bool verbose = false){
-    int count = 0;
-    if(verbose)
-        std::cout << "   Antinodes:" << std::endl;
-
+unsigned long getAllAntinodes(std::map<char, Antennas> & f, std::set<Coord> & antinodes){
+    antinodes.clear();
+    
     for(std::map<char, Antennas>::iterator it = f.begin(); it != f.end(); it++){
-        for(std::deque<Coord>::iterator c_it = it->second.getAntinodes().begin();
-            c_it != it->second.getAntinodes().end(); c_it++){
-                if(verbose)
-                    std::cout << "   " << ++count << " (" << c_it->x << ", " << c_it->y << ")" << std::endl;
-                Coord c = *c_it;
-                antinodes.insert(*c_it);
-            }
+        antinodes.insert(it->second.getAntinodes().begin(), it->second.getAntinodes().end());
     }
-
+    
     return antinodes.size();
+}
+
+void changeType(std::map<char, Antennas> & f, bool type2, bool recalc){
+    for(std::map<char, Antennas>::iterator it = f.begin(); it != f.end(); it++){
+        it->second.setType2(recalc);
+    }
+}
+
+void selectType2(std::map<char, Antennas> & f, bool recalc = true){
+    changeType(f, true, recalc);
+}
+
+void selectType1(std::map<char, Antennas> & f, bool recalc = true){
+    changeType(f, false, recalc);
 }
 
 void printAntinodes(std::set<Coord> & antinodes){
@@ -196,10 +247,34 @@ void printAntinodes(std::set<Coord> & antinodes){
     }
 }
 
+unsigned long problemOne(std::map<char,Antennas> & frequencies, std::set<Coord> & antinodes){
+    unsigned long totalAntinodes;
+    std::cout << cm.beginLog() << "AoC 2024 - Day 08: PROBLEM 1" << std::endl;
+
+    totalAntinodes = getAllAntinodes(frequencies, antinodes);
+    std::cout << cm.beginLog() << "TOTAL ANTINODES ON MAP: " << totalAntinodes << "." << std::endl;
+    
+    return totalAntinodes;
+}
+
+unsigned long problemTwo(std::map<char,Antennas> & frequencies, std::set<Coord> & antinodes){
+    unsigned long totalAntinodes;
+    std::cout << cm.beginLog() << "AoC 2024 - Day 08: PROBLEM 2" << std::endl;
+
+    std:: cout << cm.beginLog() << "RECALC STARTS" << std::endl;
+    selectType2(frequencies);
+    std:: cout << cm.beginLog() << "RECALC ENDS" << std::endl;
+
+    totalAntinodes = getAllAntinodes(frequencies, antinodes);
+    std::cout << cm.beginLog() << "TOTAL ANTINODES ON MAP: " << totalAntinodes << "." << std::endl;
+    
+    return totalAntinodes;
+}
+
+
 int main(int argc, char** argv){
     char* inputFile;
     int maxX = 0;
-    int totalAntinodes = 0;
     std::map<char, Antennas> frequencies;
     std::set<Coord> antinodes;
     
@@ -245,19 +320,9 @@ int main(int argc, char** argv){
 
     std::cout << cm.beginLog() << "Initializing map data: COMPLETE." << std::endl;
 
-    // for(std::map<char, Antennas>::iterator i = frequencies.begin(); i != frequencies.end(); i++){
-    //     totalAntinodes += (int) i->second.getAntinodeCount();
-    // //    i->second.debug();
-    // }
-
-    // printAntennaCounts(frequencies);
-    
-    // deDupeAntinodes(frequencies, antinodes);
-    // printAntinodes(antinodes);
-
-    //frequencies.begin()->second.debug();
-
-    std::cout << cm.beginLog() << "TOTAL ANTINODES ON MAP: " << deDupeAntinodes(frequencies, antinodes) << "." << std::endl;
+    problemOne(frequencies, antinodes);
+    problemTwo(frequencies, antinodes);
+    //printAntennaCounts(frequencies);
 
     return 0;
 }
